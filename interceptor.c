@@ -405,6 +405,26 @@ long (*orig_custom_syscall)(void);
  */
 static int init_function(void) {
     // calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
+
+    // calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
+        //4 INIT_LIST_HEAD (&some_list); // pid_list
+        //struct list_head some_list; INIT_LIST_HEAD(&some_list);
+        // struct list_head some_list; INIT_LIST_HEAD(&some_list);
+
+        //5 calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
+        //ONY FOR INIT -- spin_lock_init(&calltable_lock)
+            // spin_lock(&calltable_lock);
+            /* tableLocked=spin_trylock(&my_lock);
+               if(!tableLocked) {
+                printk(KERN_INFO "Unable to hold lock");
+                return 0;
+               } else {
+               printk(KERN_INFO "Lock acquired");
+               spin_unlock(&calltable_lock);
+               return 0;
+               } */
+           // spin_unlock (&calltable_lock)
+
     //INIT_LIST_HEAD (&some_list); // pid_list
     //struct list_head some_list; INIT_LIST_HEAD(&some_list);
     // struct list_head some_list; INIT_LIST_HEAD(&some_list);
