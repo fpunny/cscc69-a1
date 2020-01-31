@@ -404,39 +404,24 @@ long (*orig_custom_syscall)(void);
  * (5) Ensure synchronization as needed.
  */
 static int init_function(void) {
-    // calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
-
-    // calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
-        //4 INIT_LIST_HEAD (&some_list); // pid_list
-        //struct list_head some_list; INIT_LIST_HEAD(&some_list);
-        // struct list_head some_list; INIT_LIST_HEAD(&some_list);
-
-        //5 calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
-        //ONY FOR INIT -- spin_lock_init(&calltable_lock)
-            // spin_lock(&calltable_lock);
-            /* tableLocked=spin_trylock(&my_lock);
-               if(!tableLocked) {
-                printk(KERN_INFO "Unable to hold lock");
-                return 0;
-               } else {
-               printk(KERN_INFO "Lock acquired");
-               spin_unlock(&calltable_lock);
-               return 0;
-               } */
-           // spin_unlock (&calltable_lock)
-
-    //INIT_LIST_HEAD (&some_list); // pid_list
+    //4 INIT_LIST_HEAD (&some_list); // pid_list
     //struct list_head some_list; INIT_LIST_HEAD(&some_list);
     // struct list_head some_list; INIT_LIST_HEAD(&some_list);
+    pid_list my_list = {.pid = null, .list = INIT_LIST_HEAD(&my_list)};
+
+    spin_lock_init(&calltable_lock);
+    spin_lock(&calltable_lock);
+
+    set_addr_rw(&mytable);
+
     orig_custom_syscall = MY_CUSTOM_SYSCALL;
     MY_CUSTOM_SYSCALL = &my_syscall; // Quercus
     orig_exit_group = __NR_exit_group;
-    __NR_exit_group = $my_exit_group;
-    set_addr_rw(&mytable);
+    __NR_exit_group = &my_exit_group;
 
     set_addr_ro(&mytable);
 
-
+    spin_unlock(&calltable_lock);
 
 
 	return 0;
@@ -454,24 +439,17 @@ static int init_function(void) {
  */
 static void exit_function(void)
 {
-    // calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
-        // spin_lock(&calltable_lock);
-        /* tableLocked=spin_trylock(&my_lock);
-           if(!tableLocked) {
-            printk(KERN_INFO "Unable to hold lock");
-            return 0;
-           } else {
-           printk(KERN_INFO "Lock acquired");
-           spin_unlock(&calltable_lock);
-           return 0;
-           } */
-       // spin_unlock (&calltable_lock)
-    MY_CUSTOM_SYSCALL = orig_custom_syscall
-    __NR_exit_group = orig_exit_group;
+
+    spin_lock(&calltable_lock);
+
     set_addr_rw(&mytable);
+
+    MY_CUSTOM_SYSCALL = orig_custom_syscall;
+    __NR_exit_group = orig_exit_group;
 
     set_addr_ro(&mytable);
 
+    spin_unlock(&calltable_lock);
 
 }
 
