@@ -409,7 +409,7 @@ static int init_function(void) {
     // struct list_head some_list; INIT_LIST_HEAD(&some_list);
     pid_list my_list = {.pid = null, .list = INIT_LIST_HEAD(&my_list)};
 
-    spin_lock_init(&calltable_lock);
+    // spin_lock_init(&calltable_lock);
     spin_lock(&calltable_lock);
 
     set_addr_rw(&mytable);
