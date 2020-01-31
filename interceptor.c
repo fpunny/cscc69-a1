@@ -379,7 +379,9 @@ static int init_function(void) {
     //struct list_head some_list; INIT_LIST_HEAD(&some_list);
     // struct list_head some_list; INIT_LIST_HEAD(&some_list);
     orig_custom_syscall = MY_CUSTOM_SYSCALL;
+    MY_CUSTOM_SYSCALL = &my_syscall; // Quercus
     orig_exit_group = __NR_exit_group;
+    __NR_exit_group = $my_exit_group;
     set_addr_rw(&mytable);
 
     set_addr_ro(&mytable);
