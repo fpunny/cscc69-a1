@@ -284,6 +284,34 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	return 0; // Just a placeholder, so it compiles with no warnings!
 }
 
+static long request_syscall_intercept(int cmd, int syscall, int pid) {
+	if (current_uid() != 0) {
+		return -EPERM;
+	}
+	return 0;
+}
+
+static long request_syscall_release(int cmd, int syscall, int pid) {
+	if (current_uid() != 0) {
+		return -EPERM;
+	}
+	return 0;
+}
+
+static long request_start_monitoring(int cmd, int syscall, int pid) {
+	if (current_uid() != 0 && current_uid() != pid) {
+		return -EPERM;
+	}
+	return 0;
+}
+
+static long request_stop_monitoring(int cmd, int syscall, int pid) {
+	if (current_uid() != 0 && current_uid() != pid) {
+		return -EPERM;
+	}
+	return 0;
+}
+
 /**
  * My system call - this function is called whenever a user issues a MY_CUSTOM_SYSCALL system call.
  * When that happens, the parameters for this system call indicate one of 4 actions/commands:
@@ -335,12 +363,25 @@ asmlinkage long interceptor(struct pt_regs reg) {
  */
 asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
+	// Check if valid pid
+	if (pid < 0 || !pid_task(find_vpid(pid), PIDTYPE_PID)) {
+		return -ESRCH;
+	}
 
+	int isRoot = current_uid() == 0;
 
-
-
-
-	return 0;
+	switch(cmd) {
+		case REQUEST_SYSCALL_INTERCEPT:
+			return request_syscall_intercept(cmd, syscall, pid);
+		case REQUEST_SYSCALL_RELEASE:
+			return request_syscall_release(cmd, syscall, pid);
+		case REQUEST_START_MONITORING:
+			return request_start_monitoring(cmd, syscall, pid);
+		case REQUEST_STOP_MONITORING:
+			return request_stop_monitoring(cmd, syscall, pid);
+		default:
+			return -EINVAL;
+	}
 }
 
 /**
