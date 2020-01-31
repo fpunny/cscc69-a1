@@ -335,10 +335,19 @@ asmlinkage long interceptor(struct pt_regs reg) {
  */
 asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
+    // Step 1
+    // Step 2
+    // Step 3
+    // Step 4
 
-
-
-
+/*
+When we want to stop hijacking a system call
+(let's say mkdir but it can be any of the previously hijacked system calls),
+we can invoke the interceptor (my_syscall),
+with a REQUEST_SYSCALL_RELEASE command as an argument and the system call number that we want to release.
+This will stop intercepting the
+target system call mkdir, and the behaviour of mkdir should go back to normal like nothing happened.
+*/
 
 	return 0;
 }
@@ -365,10 +374,15 @@ long (*orig_custom_syscall)(void);
  * (5) Ensure synchronization as needed.
  */
 static int init_function(void) {
+    // calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
+    //INIT_LIST_HEAD (&some_list); // pid_list
+    //struct list_head some_list; INIT_LIST_HEAD(&some_list);
+    // struct list_head some_list; INIT_LIST_HEAD(&some_list);
+    orig_custom_syscall = MY_CUSTOM_SYSCALL;
+    orig_exit_group = __NR_exit_group;
+    set_addr_rw(&mytable);
 
-    // Step 3
-    // set_addr_rw
-    // set_addr_ro
+    set_addr_ro(&mytable);
 
 
 
@@ -388,10 +402,23 @@ static int init_function(void) {
  */
 static void exit_function(void)
 {
+    // calltable_lock TO LOCK TABLE WHEN MAKING RW R CHANGES
+        // spin_lock(&calltable_lock);
+        /* tableLocked=spin_trylock(&my_lock);
+           if(!tableLocked) {
+            printk(KERN_INFO "Unable to hold lock");
+            return 0;
+           } else {
+           printk(KERN_INFO "Lock acquired");
+           spin_unlock(&calltable_lock);
+           return 0;
+           } */
+       // spin_unlock (&calltable_lock)
+    MY_CUSTOM_SYSCALL = orig_custom_syscall
+    __NR_exit_group = orig_exit_group;
+    set_addr_rw(&mytable);
 
-
-
-
+    set_addr_ro(&mytable);
 
 
 }
