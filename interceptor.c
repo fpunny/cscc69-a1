@@ -291,11 +291,12 @@ void my_exit_group(int status)
  */
 asmlinkage long interceptor(struct pt_regs reg) {
 	
-
-
-	log_message(pid, reg->ax, reg->bx, reg->cx, reg->dx, reg->si, reg->di, reg->bp);
-	
-	return orig_custom_syscall();
+	int isMonitored = check_pid_monitored(reg.ax, current->pid);
+	if (isMonitored) {
+		log_message(current->pid, reg.ax, reg.bx, reg.cx, reg.dx, reg.si, reg.di, reg.bp);
+	}
+	return table[reg.ax].f(reg);
+	// return orig_custom_syscall();
 
 	// return 0; // Just a placeholder, so it compiles with no warnings!
 }
