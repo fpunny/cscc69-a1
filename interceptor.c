@@ -572,14 +572,6 @@ static int init_function(void) {
 	table[__NR_exit_group]-> monitored = 0;
 	table[__NR_exit_group]-> my_list = exit_list_head;
 
-
-
-	// Setting the list to the one we just initiated??
-    table.my_list = the_pid_list;
-
-	// Storing the table??
-    sys_call_table = mytable;
-
 	// Set the system call table to non-writable
     set_addr_ro(&sys_call_table);
 
