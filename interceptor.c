@@ -18,7 +18,7 @@ MODULE_LICENSE("GPL");
 
 //----- System Call Table Stuff ------------------------------------
 /* Symbol that allows access to the kernel system call table */
-extern void* sys_call_table[];
+extern void* sys_call_table[]; // Putting syscall in, or intercepting
 
 /* The sys_call_table is read-only => must make it RW before replacing a syscall */
 void set_addr_rw(unsigned long addr) {
@@ -60,7 +60,12 @@ struct pid_list {
 /* Store info about intercepted/replaced system calls */
 typedef struct {
 
-	/* Original system call */
+	/* Original system call
+	* asmlinkage - Keeps in it RAM.
+	* Return Type: long
+	* Field f which is type pointer (Function Pointer)
+	* Arguments (Struct pt_regs)
+    */
 	asmlinkage long (*f)(struct pt_regs);
 
 	/* Status: 1=intercepted, 0=not intercepted */
@@ -503,7 +508,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 /**
  *
  */
-long (*orig_custom_syscall)(void);
+long (*orig_custom_syscall)(void); // STORES FUNCTION OF ORGINAL SYSCALL
 
 
 /**
@@ -522,23 +527,32 @@ long (*orig_custom_syscall)(void);
  * (5) Ensure synchronization as needed.
  */
 static int init_function(void) {
-    //4 INIT_LIST_HEAD (&some_list); // pid_list
-    //struct list_head some_list; INIT_LIST_HEAD(&some_list);
-    // struct list_head some_list; INIT_LIST_HEAD(&some_list);
-    pid_list my_list = {.pid = null, .list = INIT_LIST_HEAD(&my_list)};
-
-    // spin_lock_init(&calltable_lock);
+	// table[MY_CUSTOM_SYSCALL].intercepted = 0 never intercepting yourself
     spin_lock(&calltable_lock);
+    spin_lock(&pidlist_lock);
 
     set_addr_rw(&mytable);
 
-    orig_custom_syscall = MY_CUSTOM_SYSCALL;
-    MY_CUSTOM_SYSCALL = &my_syscall; // Quercus
+	orig_custom_syscall = table[MY_CUSTOM_SYSCALL].f;
+    table[MY_CUSTOM_SYSCALL].f = &my_syscall; // Quercus ARRAY MY_CUSTOOER_SYCALL BACK UP TABLE
     orig_exit_group = __NR_exit_group;
     __NR_exit_group = &my_exit_group;
 
+//    pid_list
+    //4 INIT_LIST_HEAD (&some_list); // pid_list
+    //struct list_head some_list; INIT_LIST_HEAD(&some_list);
+    // struct list_head some_list; INIT_LIST_HEAD(&some_list);
+//    pid_list the_pid_list = {.pid = null, .list = INIT_LIST_HEAD(&my_list)}; //
+
+    INIT_LIST_HEAD(&my_list)
+
+    mytable.my_list = the_pid_list;
+
+    sys_call_table = mytable;
+
     set_addr_ro(&mytable);
 
+    spin_unlock(&pidlist_lock)
     spin_unlock(&calltable_lock);
 
 
@@ -558,11 +572,11 @@ static int init_function(void) {
 static void exit_function(void)
 {
 
-    spin_lock(&calltable_lock);
+	spin_lock(&calltable_lock);
 
     set_addr_rw(&mytable);
 
-    MY_CUSTOM_SYSCALL = orig_custom_syscall;
+	table[MY_CUSTOM_SYSCALL].f = orig_custom_syscall;
     __NR_exit_group = orig_exit_group;
 
     set_addr_ro(&mytable);
