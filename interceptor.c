@@ -546,10 +546,13 @@ static int init_function(void) {
     set_addr_rw(&sys_call_table);
 	// table[MY_CUSTOM_SYSCALL].intercepted = 0 never intercepting yourself
 
+	// * Original Custom System Call Step *
 	// Save the current custom system call in a holder pointer.
 	orig_custom_syscall = table[MY_CUSTOM_SYSCALL].f;
 	// Override the current custom system call with our new one
     table[MY_CUSTOM_SYSCALL].f = &my_syscall;
+
+	// * Original NR_EXIT System Call Step *
 	// Save the current exit system call in a holder pointer.
     orig_exit_group = __NR_exit_group;
 	// Override the current exit system call with our new one
