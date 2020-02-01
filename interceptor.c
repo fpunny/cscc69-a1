@@ -81,7 +81,6 @@ spinlock_t pidlist_lock = SPIN_LOCK_UNLOCKED;
 spinlock_t calltable_lock = SPIN_LOCK_UNLOCKED;
 //-------------------------------------------------------------
 
-
 //----------LIST OPERATIONS------------------------------------
 /**
  * These operations are meant for manipulating the list of pids
@@ -284,32 +283,139 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	return 0; // Just a placeholder, so it compiles with no warnings!
 }
 
-static long request_syscall_intercept(int cmd, int syscall, int pid) {
+static long request_syscall_intercept(int cmd, int syscall) {
+
+	// Check if root
 	if (current_uid() != 0) {
 		return -EPERM;
 	}
+
+	spin_lock(&calltable_lock);
+
+	// Check if call is unintercepted
+	if (!mytable[syscall]->intercepted) {
+		spin_unlock(&calltable_lock);
+		return -EBUSY;
+	}
+
+	// Flag to intercept syscall
+	mytable[syscall]->intercepted = 1;
+	spin_unlock(&calltable_lock);
 	return 0;
 }
 
-static long request_syscall_release(int cmd, int syscall, int pid) {
+static long request_syscall_release(int cmd, int syscall) {
+
+	// Check if root
 	if (current_uid() != 0) {
 		return -EPERM;
 	}
+
+	spin_lock(&calltable_lock);
+
+	// Check if call is intercepted
+	if (mytable[syscall]->intercepted) {
+		spin_unlock(&calltable_lock);
+		return -EINVAL;
+	}
+
+	// Flag to intercept syscall
+	mytable[syscall]->intercepted = 0;
+	spin_unlock(&calltable_lock);
 	return 0;
 }
 
 static long request_start_monitoring(int cmd, int syscall, int pid) {
+
+	// Check if root user, or if monitoring own process
 	if (current_uid() != 0 && current_uid() != pid) {
 		return -EPERM;
 	}
-	return 0;
+
+	spin_lock(&calltable_lock);
+	int isMonitorAll = mytable[syscall]->monitored == 2;
+	int status = 0;
+
+	switch(pid) {
+		case 0:
+			// If already monitoring all, no good
+			if (isMonitorAll) {
+				status = -EBUSY;
+				break;
+			}
+
+			// Reset list to blacklist and set to monitor all
+			spin_lock(&pidlist_lock);
+			destroy_list(syscall);
+			spin_unlock(&pidlist_lock);
+			mytable[syscall]->monitored = 2;
+			break;
+
+		default:
+			spin_lock(&pidlist_lock);
+
+			// If not monitoring all, try to add to whitelist
+			if (!isMonitorAll) {
+				int hasPid = check_pid_monitored(syscall, pid);
+				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
+			
+			// If not, try to remove from whitelist
+			} else {
+				status = del_pid_sysc(pid, syscall);
+			}
+
+			spin_unlock(&pidlist_lock);
+			break;
+	}
+
+	spin_unlock(&calltable_lock);
+	return status;
 }
 
 static long request_stop_monitoring(int cmd, int syscall, int pid) {
+
+	// Check if root user, or if monitoring own process
 	if (current_uid() != 0 && current_uid() != pid) {
 		return -EPERM;
 	}
-	return 0;
+
+	spin_lock(&calltable_lock);
+	int isMonitorAll = mytable[syscall]->monitored == 2;
+	int status = 0;
+
+	switch(pid) {
+		case 0:
+			// If already monitoring all, no good
+			if (!isMonitorAll) {
+				status = -EINVAL;
+				break;
+			}
+
+			// Reset list to whitelist
+			spin_lock(&pidlist_lock);
+			destroy_list(syscall);
+			spin_unlock(&pidlist_lock);
+			break;
+
+		default:
+			spin_lock(&pidlist_lock);
+
+			// If monitoring all, try to add to blacklist
+			if (isMonitorAll) {
+				int hasPid = check_pid_monitored(syscall, pid);
+				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
+			
+			// If not, try to remove from blacklist
+			} else {
+				status = del_pid_sysc(pid, syscall);
+			}
+
+			spin_unlock(&pidlist_lock);
+			break;
+	}
+
+	spin_unlock(&calltable_lock);
+	return status;
 }
 
 /**
@@ -363,20 +469,32 @@ static long request_stop_monitoring(int cmd, int syscall, int pid) {
  */
 asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
-	// Check if valid pid
-	if (pid < 0 || !pid_task(find_vpid(pid), PIDTYPE_PID)) {
-		return -ESRCH;
+	// Check if syscall is valid
+	if (syscall == 0 || syscall > NR_syscalls) {
+		return -EINVAL;
 	}
 
 	switch(cmd) {
 		case REQUEST_SYSCALL_INTERCEPT:
 			return request_syscall_intercept(cmd, syscall, pid);
+
 		case REQUEST_SYSCALL_RELEASE:
 			return request_syscall_release(cmd, syscall, pid);
+
 		case REQUEST_START_MONITORING:
+			// Check if valid pid
+			if (pid != 0 || !pid_task(find_vpid(pid), PIDTYPE_PID)) {
+				return -ESRCH;
+			}
 			return request_start_monitoring(cmd, syscall, pid);
+
 		case REQUEST_STOP_MONITORING:
+			// Check if valid pid
+			if (pid != 0 || !pid_task(find_vpid(pid), PIDTYPE_PID)) {
+				return -ESRCH;
+			}
 			return request_stop_monitoring(cmd, syscall, pid);
+
 		default:
 			return -EINVAL;
 	}
