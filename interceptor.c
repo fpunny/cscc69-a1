@@ -527,31 +527,37 @@ long (*orig_custom_syscall)(void); // STORES FUNCTION OF ORGINAL SYSCALL
  * (5) Ensure synchronization as needed.
  */
 static int init_function(void) {
-	// table[MY_CUSTOM_SYSCALL].intercepted = 0 never intercepting yourself
+	
+	// Lock Access
     spin_lock(&calltable_lock);
     spin_lock(&pidlist_lock);
 
+	// Set the system call table to writable
     set_addr_rw(&sys_call_table);
+	// table[MY_CUSTOM_SYSCALL].intercepted = 0 never intercepting yourself
 
+	// Save the current custom system call in a holder pointer.
 	orig_custom_syscall = table[MY_CUSTOM_SYSCALL].f;
-    table[MY_CUSTOM_SYSCALL].f = &my_syscall; // Quercus ARRAY MY_CUSTOOER_SYCALL BACK UP TABLE
+	// Override the current custom system call with our new one
+    table[MY_CUSTOM_SYSCALL].f = &my_syscall;
+	// Save the current exit system call in a holder pointer.
     orig_exit_group = __NR_exit_group;
-    __NR_exit_group = &my_exit_group;
+	// Override the current exit system call with our new one
+    table[__NR_exit_group].f = &my_exit_group;
 
-//    pid_list
-    //4 INIT_LIST_HEAD (&some_list); // pid_list
-    //struct list_head some_list; INIT_LIST_HEAD(&some_list);
-    // struct list_head some_list; INIT_LIST_HEAD(&some_list);
-//    pid_list the_pid_list = {.pid = null, .list = INIT_LIST_HEAD(&my_list)}; //
-
+	// This is how you init the list. Everything will be initilized during function calls.
     INIT_LIST_HEAD(&my_list)
 
-    mytable.my_list = the_pid_list;
+	// Setting the list to the one we just initiated??
+    table.my_list = the_pid_list;
 
+	// Storing the table??
     sys_call_table = mytable;
 
+	// Set the system call table to non-writable
     set_addr_ro(&sys_call_table);
 
+	// Unlock Access
     spin_unlock(&pidlist_lock)
     spin_unlock(&calltable_lock);
 
@@ -571,16 +577,23 @@ static int init_function(void) {
  */
 static void exit_function(void)
 {
-
+	// Lock Access
 	spin_lock(&calltable_lock);
+	spin_lock(&pidlist_lock);
 
+	// Set the system call table to writable
     set_addr_rw(&sys_call_table);
 
+	// Restoring MY_CUSTOM_SYSCALL to the original syscall.
 	table[MY_CUSTOM_SYSCALL].f = orig_custom_syscall;
+	// Restoring __NR_exit_group (SYSCALL) to its original syscall.
 	table[__NR_exit_group].f = orig_exit_group;
 
+	// Set the system call table to non-writable
     set_addr_ro(&sys_call_table);
 
+	// Unlock Access
+	spin_unlock(&pidlist_lock)
     spin_unlock(&calltable_lock);
 
 }
