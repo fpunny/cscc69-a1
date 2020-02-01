@@ -558,7 +558,7 @@ static int init_function(void) {
     table[MY_CUSTOM_SYSCALL].f = orig_custom_syscall;
 	table[MY_CUSTOM_SYSCALL]-> intercepted = 1;
 	table[MY_CUSTOM_SYSCALL]-> monitored = 0;
-	table[MY_CUSTOM_SYSCALL]-> my_list = custom_list_head;
+	table[MY_CUSTOM_SYSCALL]-> my_list = custom_list_head; // This init is wrong!!
 
 	// * Original NR_EXIT System Call Step *
 	// Save the current exit system call in a holder pointer.
