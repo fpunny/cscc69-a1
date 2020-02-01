@@ -577,7 +577,7 @@ static void exit_function(void)
     set_addr_rw(&mytable);
 
 	table[MY_CUSTOM_SYSCALL].f = orig_custom_syscall;
-    __NR_exit_group = orig_exit_group;
+	table[__NR_exit_group].f = orig_exit_group;
 
     set_addr_ro(&mytable);
 
