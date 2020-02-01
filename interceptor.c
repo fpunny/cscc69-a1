@@ -531,7 +531,7 @@ static int init_function(void) {
     spin_lock(&calltable_lock);
     spin_lock(&pidlist_lock);
 
-    set_addr_rw(&mytable);
+    set_addr_rw(&sys_call_table);
 
 	orig_custom_syscall = table[MY_CUSTOM_SYSCALL].f;
     table[MY_CUSTOM_SYSCALL].f = &my_syscall; // Quercus ARRAY MY_CUSTOOER_SYCALL BACK UP TABLE
@@ -550,7 +550,7 @@ static int init_function(void) {
 
     sys_call_table = mytable;
 
-    set_addr_ro(&mytable);
+    set_addr_ro(&sys_call_table);
 
     spin_unlock(&pidlist_lock)
     spin_unlock(&calltable_lock);
@@ -574,12 +574,12 @@ static void exit_function(void)
 
 	spin_lock(&calltable_lock);
 
-    set_addr_rw(&mytable);
+    set_addr_rw(&sys_call_table);
 
 	table[MY_CUSTOM_SYSCALL].f = orig_custom_syscall;
 	table[__NR_exit_group].f = orig_exit_group;
 
-    set_addr_ro(&mytable);
+    set_addr_ro(&sys_call_table);
 
     spin_unlock(&calltable_lock);
 
