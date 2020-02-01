@@ -290,12 +290,14 @@ void my_exit_group(int status)
  * (4) Don't forget to call the original system call, so we allow processes to proceed as normal.
  */
 asmlinkage long interceptor(struct pt_regs reg) {
+	
+	
 
+	log_message(pid, reg->ax, reg->bx, reg->cx, reg->dx, reg->si, reg->di, reg->bp);
+	
+	return orig_custom_syscall();
 
-
-
-
-	return 0; // Just a placeholder, so it compiles with no warnings!
+	// return 0; // Just a placeholder, so it compiles with no warnings!
 }
 
 static long request_syscall_intercept(int cmd, int syscall) {
