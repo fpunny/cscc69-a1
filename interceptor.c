@@ -266,7 +266,7 @@ void my_exit_group(int status)
 	orig_exit_group(status);
 
 	// Unlock Access
-    spin_unlock(&pidlist_lock)
+    spin_unlock(&pidlist_lock);
     spin_unlock(&calltable_lock);
 }
 //----------------------------------------------------------------
@@ -291,7 +291,7 @@ void my_exit_group(int status)
  */
 asmlinkage long interceptor(struct pt_regs reg) {
 	
-	
+
 
 	log_message(pid, reg->ax, reg->bx, reg->cx, reg->dx, reg->si, reg->di, reg->bp);
 	
