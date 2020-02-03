@@ -291,15 +291,17 @@ void my_exit_group(int status)
  */
 asmlinkage long interceptor(struct pt_regs reg) {
 
+	int hasPid;
+	int isMonitorAll;
 	spin_lock(&calltable_lock);
 
 	// Read pid
 	spin_lock(&pidlist_lock);	
-	int hasPid = check_pid_monitored(reg.ax, current->pid);
+	hasPid = check_pid_monitored(reg.ax, current->pid);
 	spin_unlock(&pidlist_lock);
 
 	// Read monitored
-	int isMonitorAll = (mytable[reg.ax].monitored) == 2;
+	isMonitorAll = (mytable[reg.ax].monitored) == 2;
 	spin_unlock(&calltable_lock);
 
 	// If monitoring all and not blacklisted, or is not monitoring all but whitelisted
@@ -363,14 +365,18 @@ static long request_syscall_release(int syscall) {
 
 static long request_start_monitoring(int syscall, int pid) {
 
+	int isMonitorAll;
+	int hasPid;
+	int status;
+
 	// Check if root user, or if monitoring own process
 	if (current_uid() != 0 && current_uid() != pid) {
 		return -EPERM;
 	}
 
 	spin_lock(&calltable_lock);
-	int isMonitorAll = (mytable[syscall].monitored) == 2;
-	int status = 0;
+	isMonitorAll = (mytable[syscall].monitored) == 2;
+	status = 0;
 
 	switch(pid) {
 		case 0:
@@ -392,7 +398,7 @@ static long request_start_monitoring(int syscall, int pid) {
 
 			// If not monitoring all, try to add to whitelist
 			if (!isMonitorAll) {
-				int hasPid = check_pid_monitored(syscall, pid);
+				hasPid = check_pid_monitored(syscall, pid);
 				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
 			// If not, try to remove from whitelist
@@ -410,14 +416,18 @@ static long request_start_monitoring(int syscall, int pid) {
 
 static long request_stop_monitoring(int syscall, int pid) {
 
+	int isMonitorAll;
+	int hasPid;
+	int status;
+
 	// Check if root user, or if monitoring own process
 	if (current_uid() != 0 && current_uid() != pid) {
 		return -EPERM;
 	}
 
 	spin_lock(&calltable_lock);
-	int isMonitorAll = (mytable[syscall].monitored) == 2;
-	int status = 0;
+	isMonitorAll = (mytable[syscall].monitored == 2);
+	status = 0;
 
 	switch(pid) {
 		case 0:
@@ -438,7 +448,7 @@ static long request_stop_monitoring(int syscall, int pid) {
 
 			// If monitoring all, try to add to blacklist
 			if (isMonitorAll) {
-				int hasPid = check_pid_monitored(syscall, pid);
+				hasPid = check_pid_monitored(syscall, pid);
 				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
 			// If not, try to remove from blacklist
@@ -559,6 +569,7 @@ long (*orig_custom_syscall)(void); // STORES FUNCTION OF ORGINAL SYSCALL
  */
 static int init_function(void) {
 
+	int syscall;
     spin_lock(&calltable_lock);
     spin_lock(&pidlist_lock);
 
@@ -575,7 +586,7 @@ static int init_function(void) {
 	sys_call_table[__NR_exit_group] = my_exit_group;
 
 	// Map all the kernal syscall commands to our abstract data structure for conditional behaviour.
-	for (int syscall = 0; syscall < NR_syscalls; syscall++) {
+	for (syscall = 0; syscall < NR_syscalls; syscall++) {
 		table[syscall].listcount = 0;
 		table[syscall].intercepted = 0;
 		table[syscall].monitored = 0;
