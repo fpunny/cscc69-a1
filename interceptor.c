@@ -321,6 +321,10 @@ static long request_syscall_intercept(int syscall) {
 
 	// Flag to intercept syscall
 	set_addr_rw((unsigned long) sys_call_table);
+	// Placing kernal syscall in our abstracted table
+	table[syscall].f = sys_call_table[syscall];
+	// Replacing kernal syscall with our intercepted function
+	sys_call_table[syscall] = interceptor;
 	mytable[syscall]->intercepted = 1;
 	set_addr_ro((unsigned long) sys_call_table);
 	spin_unlock(&calltable_lock);
@@ -342,6 +346,8 @@ static long request_syscall_release(int syscall) {
 		return -EINVAL;
 	}
 	set_addr_rw((unsigned long) sys_call_table);
+	// Replacing kernal syscall with the original function
+	sys_call_table[syscall] = table[syscall].f;
 	// Flag to intercept syscall
 	mytable[syscall]->intercepted = 0;
 	set_addr_ro((unsigned long) sys_call_table);
