@@ -292,11 +292,12 @@ void my_exit_group(int status)
 asmlinkage long interceptor(struct pt_regs reg) {
 	
 	int isMonitored = check_pid_monitored(reg.ax, current->pid);
-	if (isMonitored) {
+	// If the specific pid is being monitored or all pids are monitoring then log message.
+	if (isMonitored || mytable[reg.ax]->monitored == 2) {
 		log_message(current->pid, reg.ax, reg.bx, reg.cx, reg.dx, reg.si, reg.di, reg.bp);
 	}
+	// Returns the original custom syscall.
 	return table[reg.ax].f(reg);
-	// return orig_custom_syscall();
 
 	// return 0; // Just a placeholder, so it compiles with no warnings!
 }
