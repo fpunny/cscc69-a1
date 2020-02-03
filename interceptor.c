@@ -551,25 +551,22 @@ long (*orig_custom_syscall)(void); // STORES FUNCTION OF ORGINAL SYSCALL
  */
 static int init_function(void) {
 
-	// Lock Access
     spin_lock(&calltable_lock);
     spin_lock(&pidlist_lock);
 
-	// Set the system call table to writable
 	set_addr_rw((unsigned long) sys_call_table);
-	// table[MY_CUSTOM_SYSCALL].intercepted = 0 never intercepting yourself
 
 	// * Original Custom System Call Step *
-	// Save the current custom system call in a holder pointer.
+	// Save the current custom system call in a holder pointer and replace kernal.
 	orig_custom_syscall = sys_call_table[MY_CUSTOM_SYSCALL];
 	sys_call_table[MY_CUSTOM_SYSCALL] = my_syscall;
 
 	// * Original NR_EXIT System Call Step *
-	// Save the current exit system call in a holder pointer.
+	// Save the current exit system call in a holder pointer and replace kernal.
 	orig_exit_group = sys_call_table[__NR_exit_group];
-	// Override the current custom system call with our new one
 	sys_call_table[__NR_exit_group] = my_exit_group;
 
+	// Map all the kernal syscall commands to our abstract data structure for conditional behaviour.
 	for (syscall = 0; syscall < NR_syscall; syscall++) {
 		table[syscall].intercepted = 0;
 		table[syscall].monitored = 0;
@@ -577,10 +574,8 @@ static int init_function(void) {
 	 	INIT_LIST_HEAD (&(table[syscall].my_list));
 	}
 
-	// Set the system call table to non-writable
     set_addr_ro((unsigned long) sys_call_table);
 
-	// Unlock Access
     spin_unlock(&pidlist_lock)
     spin_unlock(&calltable_lock);
 
@@ -600,11 +595,10 @@ static int init_function(void) {
  */
 static void exit_function(void)
 {
-	// Lock Access
+
 	spin_lock(&calltable_lock);
 	spin_lock(&pidlist_lock);
 
-	// Set the system call table to writable
 	set_addr_rw((unsigned long) sys_call_table);
 
 	// Restoring MY_CUSTOM_SYSCALL to the original syscall.
@@ -612,10 +606,8 @@ static void exit_function(void)
 	// Restoring __NR_exit_group (SYSCALL) to its original syscall.
     sys_call_table[__NR_exit_group] = orig_exit_group;
 
-	// Set the system call table to non-writable
 	set_addr_ro((unsigned long) sys_call_table);
 
-	// Unlock Access
 	spin_unlock(&pidlist_lock)
     spin_unlock(&calltable_lock);
 
