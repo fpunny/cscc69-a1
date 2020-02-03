@@ -575,7 +575,7 @@ static int init_function(void) {
 	sys_call_table[__NR_exit_group] = my_exit_group;
 
 	// Map all the kernal syscall commands to our abstract data structure for conditional behaviour.
-	for (syscall = 0; syscall < NR_syscall; syscall++) {
+	for (int syscall = 0; syscall < NR_syscalls; syscall++) {
 		table[syscall].listcount = 0;
 		table[syscall].intercepted = 0;
 		table[syscall].monitored = 0;
@@ -585,7 +585,7 @@ static int init_function(void) {
 
     set_addr_ro((unsigned long) sys_call_table);
 
-    spin_unlock(&pidlist_lock)
+    spin_unlock(&pidlist_lock);
     spin_unlock(&calltable_lock);
 
 
