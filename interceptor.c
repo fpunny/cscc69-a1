@@ -568,6 +568,7 @@ static int init_function(void) {
 	sys_call_table[__NR_exit_group] = my_exit_group;
 
 	// Map all the kernal syscall commands to our abstract data structure for conditional behaviour.
+	printf("k\n");
 	for (syscall = 0; syscall < NR_syscalls; syscall++) {
 		table[syscall].listcount = 0;
 		table[syscall].intercepted = 0;
@@ -575,6 +576,7 @@ static int init_function(void) {
 		table[syscall].f = sys_call_table[syscall];
 	 	INIT_LIST_HEAD (&(table[syscall].my_list));
 	}
+	printf("kk\n");
 
     set_addr_ro((unsigned long) sys_call_table);
 
