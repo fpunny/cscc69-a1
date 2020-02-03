@@ -11,7 +11,6 @@
 #include <linux/syscalls.h>
 #include "interceptor.h"
 
-
 MODULE_DESCRIPTION("My kernel module");
 MODULE_AUTHOR("Frederic Pun & Ralph Maamari");
 MODULE_LICENSE("GPL");
@@ -322,7 +321,7 @@ static long request_syscall_intercept(int syscall) {
 	spin_lock(&calltable_lock);
 
 	// Check if call is unintercepted
-	if (mytable[syscall].intercepted == 0) {
+	if (table[syscall].intercepted == 0) {
 		spin_unlock(&calltable_lock);
 		return -EBUSY;
 	}
@@ -331,7 +330,7 @@ static long request_syscall_intercept(int syscall) {
 	set_addr_rw((unsigned long) sys_call_table);
 	// Replacing kernal syscall with our intercepted function
 	sys_call_table[syscall] = interceptor;
-	mytable[syscall].intercepted = 1;
+	table[syscall].intercepted = 1;
 	set_addr_ro((unsigned long) sys_call_table);
 	spin_unlock(&calltable_lock);
 	return 0;
@@ -347,7 +346,7 @@ static long request_syscall_release(int syscall) {
 	spin_lock(&calltable_lock);
 
 	// Check if call is intercepted
-	if (mytable[syscall].intercepted == 1) {
+	if (table[syscall].intercepted == 1) {
 		spin_unlock(&calltable_lock);
 		return -EINVAL;
 	}
@@ -355,7 +354,7 @@ static long request_syscall_release(int syscall) {
 	// Replacing kernal syscall with the original function
 	sys_call_table[syscall] = table[syscall].f;
 	// Flag to intercept syscall
-	mytable[syscall].intercepted = 0;
+	table[syscall].intercepted = 0;
 	set_addr_ro((unsigned long) sys_call_table);
 	spin_unlock(&calltable_lock);
 	return 0;
@@ -375,21 +374,20 @@ static long request_start_monitoring(int syscall, int pid) {
 
 	if (pid == 0) {
 			// If already monitoring all, no good
-			if (mytable[syscall].monitored == 2) {
+			if (table[syscall].monitored == 2) {
 				status = -EBUSY;
-				break;
+			} else {
+				// Reset list to blacklist and set to monitor all
+				spin_lock(&pidlist_lock);
+				destroy_list(syscall);
+				spin_unlock(&pidlist_lock);
+				table[syscall].monitored = 2;
 			}
-
-			// Reset list to blacklist and set to monitor all
-			spin_lock(&pidlist_lock);
-			destroy_list(syscall);
-			spin_unlock(&pidlist_lock);
-			mytable[syscall].monitored = 2;
 	} else {
 		spin_lock(&pidlist_lock);
 
 		// If not monitoring all, try to add to whitelist
-		if (mytable[syscall].monitored != 2) {
+		if (table[syscall].monitored != 2) {
 			hasPid = check_pid_monitored(syscall, pid);
 			status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
@@ -420,20 +418,19 @@ static long request_stop_monitoring(int syscall, int pid) {
 
 	if (pid == 0) {
 			// If already monitoring all, no good
-			if (mytable[syscall].monitored != 2) {
+			if (table[syscall].monitored != 2) {
 				status = -EINVAL;
-				break;
+			} else {
+				// Reset list to whitelist
+				spin_lock(&pidlist_lock);
+				destroy_list(syscall);
+				spin_unlock(&pidlist_lock);
 			}
-
-			// Reset list to whitelist
-			spin_lock(&pidlist_lock);
-			destroy_list(syscall);
-			spin_unlock(&pidlist_lock);
 	} else {
 		spin_lock(&pidlist_lock);
 
 		// If monitoring all, try to add to blacklist
-		if (mytable[syscall].monitored == 2) {
+		if (table[syscall].monitored == 2) {
 			hasPid = check_pid_monitored(syscall, pid);
 			status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
