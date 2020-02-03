@@ -605,7 +605,7 @@ static void exit_function(void)
 	spin_lock(&pidlist_lock);
 
 	// Set the system call table to writable
-    set_addr_rw(&sys_call_table);
+	set_addr_rw((unsigned long) sys_call_table);
 
 	// Restoring MY_CUSTOM_SYSCALL to the original syscall.
 	table[MY_CUSTOM_SYSCALL].f = orig_custom_syscall;
@@ -613,7 +613,7 @@ static void exit_function(void)
 	table[__NR_exit_group].f = orig_exit_group;
 
 	// Set the system call table to non-writable
-    set_addr_ro(&sys_call_table);
+	set_addr_ro((unsigned long) sys_call_table);
 
 	// Unlock Access
 	spin_unlock(&pidlist_lock)
