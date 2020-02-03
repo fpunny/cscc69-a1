@@ -564,36 +564,18 @@ static int init_function(void) {
 	orig_custom_syscall = sys_call_table[MY_CUSTOM_SYSCALL];
 	sys_call_table[MY_CUSTOM_SYSCALL] = my_syscall;
 
-	struct pid_list custom_list_head;
-	// This is how you init the list. Everything will be initilized during function calls.
-    INIT_LIST_HEAD(&custom_list_head);
-	// Override the current custom system call with our new one
-    table[MY_CUSTOM_SYSCALL].f = orig_custom_syscall;
-	table[MY_CUSTOM_SYSCALL]-> intercepted = 1;
-	table[MY_CUSTOM_SYSCALL]-> monitored = 0;
-	table[MY_CUSTOM_SYSCALL]-> my_list = custom_list_head; // This init is wrong!!
-
 	// * Original NR_EXIT System Call Step *
 	// Save the current exit system call in a holder pointer.
 	orig_exit_group = sys_call_table[__NR_exit_group];
-
-	struct pid_list exit_list_head;
-	// This is how you init the list. Everything will be initilized during function calls.
-    INIT_LIST_HEAD(&custom_list_head);
 	// Override the current custom system call with our new one
 	sys_call_table[__NR_exit_group] = my_exit_group;
-    table[__NR_exit_group].f = orig_exit_group;
-	table[__NR_exit_group]-> intercepted = 1;
-	table[__NR_exit_group]-> monitored = 0;
-	table[__NR_exit_group]-> my_list = exit_list_head;
 
-	// for (syscall = 0; syscall < NR_syscall; syscall++) {
-	// 	table[syscall].intercepted = 0;
-	// 	table[syscall].monitored = 0;
-	// 	table[syscall].f = sys_call_table[syscall];
-	// 	table[MY_CUSTOM_SYSCALL].my_list = INIT_LIST_HEAD(&custom_list_head);
-	//  INIT_LIST_HEAD (&(table[syscall].my_list));
-	// }
+	for (syscall = 0; syscall < NR_syscall; syscall++) {
+		table[syscall].intercepted = 0;
+		table[syscall].monitored = 0;
+		table[syscall].f = sys_call_table[syscall];
+	 	INIT_LIST_HEAD (&(table[syscall].my_list));
+	}
 
 	// Set the system call table to non-writable
     set_addr_ro((unsigned long) sys_call_table);
