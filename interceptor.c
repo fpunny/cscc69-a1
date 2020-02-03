@@ -303,7 +303,7 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	spin_unlock(&calltable_lock);
 
 	// If monitoring all and not blacklisted, or is not monitoring all but whitelisted
-	if ((mytable[reg.ax].monitored) == 2 && hasPid == 0) || (mytable[reg.ax].monitored) != 2 && hasPid == 1)) {
+	if (((mytable[reg.ax].monitored == 2) && (hasPid == 0)) || ((mytable[reg.ax].monitored != 2) && (hasPid == 1))) {
 		log_message(current->pid, reg.ax, reg.bx, reg.cx, reg.dx, reg.si, reg.di, reg.bp);
 	}
 	// Returns the original custom syscall.
@@ -374,7 +374,7 @@ static long request_start_monitoring(int syscall, int pid) {
 	status = 0;
 
 	switch(pid) {
-		case 0:
+		case (pid == 0):
 			// If already monitoring all, no good
 			if (mytable[syscall].monitored == 2) {
 				status = -EBUSY;
@@ -423,7 +423,7 @@ static long request_stop_monitoring(int syscall, int pid) {
 	status = 0;
 
 	switch(pid) {
-		case 0:
+		case (pid == 0):
 			// If already monitoring all, no good
 			if (mytable[syscall].monitored != 2) {
 				status = -EINVAL;
