@@ -261,7 +261,7 @@ void my_exit_group(int status)
 
 	// Delete the pid from all list of monitored pids.
 	del_pid(current->pid);
-	
+
 	// Original Exit Group Call
 	orig_exit_group(status);
 
@@ -290,7 +290,7 @@ void my_exit_group(int status)
  * (4) Don't forget to call the original system call, so we allow processes to proceed as normal.
  */
 asmlinkage long interceptor(struct pt_regs reg) {
-	
+
 	int isMonitored = check_pid_monitored(reg.ax, current->pid);
 	// If the specific pid is being monitored or all pids are monitoring then log message.
 	if (isMonitored || mytable[reg.ax]->monitored == 2) {
@@ -377,7 +377,7 @@ static long request_start_monitoring(int cmd, int syscall, int pid) {
 			if (!isMonitorAll) {
 				int hasPid = check_pid_monitored(syscall, pid);
 				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
-			
+
 			// If not, try to remove from whitelist
 			} else {
 				status = del_pid_sysc(pid, syscall);
@@ -423,7 +423,7 @@ static long request_stop_monitoring(int cmd, int syscall, int pid) {
 			if (isMonitorAll) {
 				int hasPid = check_pid_monitored(syscall, pid);
 				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
-			
+
 			// If not, try to remove from blacklist
 			} else {
 				status = del_pid_sysc(pid, syscall);
@@ -541,7 +541,7 @@ long (*orig_custom_syscall)(void); // STORES FUNCTION OF ORGINAL SYSCALL
  * (5) Ensure synchronization as needed.
  */
 static int init_function(void) {
-	
+
 	// Lock Access
     spin_lock(&calltable_lock);
     spin_lock(&pidlist_lock);
@@ -554,7 +554,7 @@ static int init_function(void) {
 	// Save the current custom system call in a holder pointer.
 	orig_custom_syscall = sys_call_table[MY_CUSTOM_SYSCALL];
 	sys_call_table[MY_CUSTOM_SYSCALL] = my_syscall;
-	// orig_custom_syscall = table[MY_CUSTOM_SYSCALL].f;
+
 	struct pid_list custom_list_head;
 	// This is how you init the list. Everything will be initilized during function calls.
     INIT_LIST_HEAD(&custom_list_head);
@@ -567,7 +567,7 @@ static int init_function(void) {
 	// * Original NR_EXIT System Call Step *
 	// Save the current exit system call in a holder pointer.
 	orig_exit_group = sys_call_table[__NR_exit_group];
-    // orig_exit_group = table[__NR_exit_group].f;
+
 	struct pid_list exit_list_head;
 	// This is how you init the list. Everything will be initilized during function calls.
     INIT_LIST_HEAD(&custom_list_head);
@@ -577,6 +577,14 @@ static int init_function(void) {
 	table[__NR_exit_group]-> intercepted = 1;
 	table[__NR_exit_group]-> monitored = 0;
 	table[__NR_exit_group]-> my_list = exit_list_head;
+
+	// for (syscall = 0; syscall < NR_syscall; syscall++) {
+	// 	table[syscall].intercepted = 0;
+	// 	table[syscall].monitored = 0;
+	// 	table[syscall].f = sys_call_table[syscall];
+	// 	table[MY_CUSTOM_SYSCALL].my_list = INIT_LIST_HEAD(&custom_list_head);
+	//  INIT_LIST_HEAD (&(table[syscall].my_list));
+	// }
 
 	// Set the system call table to non-writable
     set_addr_ro((unsigned long) sys_call_table);
