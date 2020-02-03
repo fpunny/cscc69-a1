@@ -373,8 +373,7 @@ static long request_start_monitoring(int syscall, int pid) {
 	spin_lock(&calltable_lock);
 	status = 0;
 
-	switch(pid) {
-		case (pid == 0):
+	if (pid == 0) {
 			// If already monitoring all, no good
 			if (mytable[syscall].monitored == 2) {
 				status = -EBUSY;
@@ -386,23 +385,20 @@ static long request_start_monitoring(int syscall, int pid) {
 			destroy_list(syscall);
 			spin_unlock(&pidlist_lock);
 			mytable[syscall].monitored = 2;
-			break;
+	} else {
+		spin_lock(&pidlist_lock);
 
-		default:
-			spin_lock(&pidlist_lock);
+		// If not monitoring all, try to add to whitelist
+		if (mytable[syscall].monitored != 2) {
+			hasPid = check_pid_monitored(syscall, pid);
+			status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
-			// If not monitoring all, try to add to whitelist
-			if (mytable[syscall].monitored != 2) {
-				hasPid = check_pid_monitored(syscall, pid);
-				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
+		// If not, try to remove from whitelist
+		} else {
+			status = del_pid_sysc(pid, syscall);
+		}
 
-			// If not, try to remove from whitelist
-			} else {
-				status = del_pid_sysc(pid, syscall);
-			}
-
-			spin_unlock(&pidlist_lock);
-			break;
+		spin_unlock(&pidlist_lock);
 	}
 
 	spin_unlock(&calltable_lock);
@@ -422,8 +418,7 @@ static long request_stop_monitoring(int syscall, int pid) {
 	spin_lock(&calltable_lock);
 	status = 0;
 
-	switch(pid) {
-		case (pid == 0):
+	if (pid == 0) {
 			// If already monitoring all, no good
 			if (mytable[syscall].monitored != 2) {
 				status = -EINVAL;
@@ -434,23 +429,20 @@ static long request_stop_monitoring(int syscall, int pid) {
 			spin_lock(&pidlist_lock);
 			destroy_list(syscall);
 			spin_unlock(&pidlist_lock);
-			break;
+	} else {
+		spin_lock(&pidlist_lock);
 
-		default:
-			spin_lock(&pidlist_lock);
+		// If monitoring all, try to add to blacklist
+		if (mytable[syscall].monitored == 2) {
+			hasPid = check_pid_monitored(syscall, pid);
+			status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
-			// If monitoring all, try to add to blacklist
-			if (mytable[syscall].monitored == 2) {
-				hasPid = check_pid_monitored(syscall, pid);
-				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
+		// If not, try to remove from blacklist
+		} else {
+			status = del_pid_sysc(pid, syscall);
+		}
 
-			// If not, try to remove from blacklist
-			} else {
-				status = del_pid_sysc(pid, syscall);
-			}
-
-			spin_unlock(&pidlist_lock);
-			break;
+		spin_unlock(&pidlist_lock);
 	}
 
 	spin_unlock(&calltable_lock);
