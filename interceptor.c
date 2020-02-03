@@ -356,9 +356,11 @@ static long request_syscall_release(int syscall) {
 }
 
 static long request_start_monitoring(int syscall, int pid) {
+	return 0;
 }
 
 static long request_stop_monitoring(int syscall, int pid) {
+	return 0;
 }
 
 /**
@@ -527,7 +529,6 @@ static void exit_function(void)
 
 	spin_unlock(&pidlist_lock);
     spin_unlock(&calltable_lock);
-
 }
 
 module_init(init_function);
