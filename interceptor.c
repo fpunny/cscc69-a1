@@ -546,7 +546,7 @@ static int init_function(void) {
     spin_lock(&pidlist_lock);
 
 	// Set the system call table to writable
-    set_addr_rw(&sys_call_table);
+	set_addr_rw((unsigned long) sys_call_table);
 	// table[MY_CUSTOM_SYSCALL].intercepted = 0 never intercepting yourself
 
 	// * Original Custom System Call Step *
@@ -578,7 +578,7 @@ static int init_function(void) {
 	table[__NR_exit_group]-> my_list = exit_list_head;
 
 	// Set the system call table to non-writable
-    set_addr_ro(&sys_call_table);
+    set_addr_ro((unsigned long) sys_call_table);
 
 	// Unlock Access
     spin_unlock(&pidlist_lock)
