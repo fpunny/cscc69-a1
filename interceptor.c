@@ -292,7 +292,6 @@ void my_exit_group(int status)
 asmlinkage long interceptor(struct pt_regs reg) {
 
 	int hasPid;
-	int isMonitorAll;
 	spin_lock(&calltable_lock);
 
 	// Read pid
@@ -301,11 +300,10 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	spin_unlock(&pidlist_lock);
 
 	// Read monitored
-	isMonitorAll = (mytable[reg.ax].monitored) == 2;
 	spin_unlock(&calltable_lock);
 
 	// If monitoring all and not blacklisted, or is not monitoring all but whitelisted
-	if ((isMonitorAll && !hasPid) || (!isMonitorAll && hasPid)) {
+	if ((mytable[reg.ax].monitored) == 2 && !hasPid) || (mytable[reg.ax].monitored) != 2 && hasPid)) {
 		log_message(current->pid, reg.ax, reg.bx, reg.cx, reg.dx, reg.si, reg.di, reg.bp);
 	}
 	// Returns the original custom syscall.
@@ -364,8 +362,6 @@ static long request_syscall_release(int syscall) {
 }
 
 static long request_start_monitoring(int syscall, int pid) {
-
-	int isMonitorAll;
 	int hasPid;
 	int status;
 
@@ -375,13 +371,12 @@ static long request_start_monitoring(int syscall, int pid) {
 	}
 
 	spin_lock(&calltable_lock);
-	isMonitorAll = (mytable[syscall].monitored) == 2;
 	status = 0;
 
 	switch(pid) {
 		case 0:
 			// If already monitoring all, no good
-			if (isMonitorAll) {
+			if (mytable[syscall].monitored == 2) {
 				status = -EBUSY;
 				break;
 			}
@@ -397,7 +392,7 @@ static long request_start_monitoring(int syscall, int pid) {
 			spin_lock(&pidlist_lock);
 
 			// If not monitoring all, try to add to whitelist
-			if (!isMonitorAll) {
+			if (mytable[syscall].monitored != 2) {
 				hasPid = check_pid_monitored(syscall, pid);
 				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
@@ -416,7 +411,6 @@ static long request_start_monitoring(int syscall, int pid) {
 
 static long request_stop_monitoring(int syscall, int pid) {
 
-	int isMonitorAll;
 	int hasPid;
 	int status;
 
@@ -426,13 +420,12 @@ static long request_stop_monitoring(int syscall, int pid) {
 	}
 
 	spin_lock(&calltable_lock);
-	isMonitorAll = (mytable[syscall].monitored == 2);
 	status = 0;
 
 	switch(pid) {
 		case 0:
 			// If already monitoring all, no good
-			if (!isMonitorAll) {
+			if (mytable[syscall].monitored != 2) {
 				status = -EINVAL;
 				break;
 			}
@@ -447,7 +440,7 @@ static long request_stop_monitoring(int syscall, int pid) {
 			spin_lock(&pidlist_lock);
 
 			// If monitoring all, try to add to blacklist
-			if (isMonitorAll) {
+			if (mytable[syscall].monitored == 2) {
 				hasPid = check_pid_monitored(syscall, pid);
 				status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
