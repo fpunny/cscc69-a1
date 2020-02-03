@@ -304,7 +304,7 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	// return 0; // Just a placeholder, so it compiles with no warnings!
 }
 
-static long request_syscall_intercept(int cmd, int syscall) {
+static long request_syscall_intercept(int syscall) {
 
 	// Check if root
 	if (current_uid() != 0) {
@@ -327,7 +327,7 @@ static long request_syscall_intercept(int cmd, int syscall) {
 	return 0;
 }
 
-static long request_syscall_release(int cmd, int syscall) {
+static long request_syscall_release(int syscall) {
 
 	// Check if root
 	if (current_uid() != 0) {
@@ -349,7 +349,7 @@ static long request_syscall_release(int cmd, int syscall) {
 	return 0;
 }
 
-static long request_start_monitoring(int cmd, int syscall, int pid) {
+static long request_start_monitoring(int syscall, int pid) {
 
 	// Check if root user, or if monitoring own process
 	if (current_uid() != 0 && current_uid() != pid) {
@@ -396,7 +396,7 @@ static long request_start_monitoring(int cmd, int syscall, int pid) {
 	return status;
 }
 
-static long request_stop_monitoring(int cmd, int syscall, int pid) {
+static long request_stop_monitoring(int syscall, int pid) {
 
 	// Check if root user, or if monitoring own process
 	if (current_uid() != 0 && current_uid() != pid) {
@@ -500,24 +500,24 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
 	switch(cmd) {
 		case REQUEST_SYSCALL_INTERCEPT:
-			return request_syscall_intercept(cmd, syscall, pid);
+			return request_syscall_intercept(syscall);
 
 		case REQUEST_SYSCALL_RELEASE:
-			return request_syscall_release(cmd, syscall, pid);
+			return request_syscall_release(syscall);
 
 		case REQUEST_START_MONITORING:
 			// Check if valid pid
 			if (pid != 0 || !pid_task(find_vpid(pid), PIDTYPE_PID)) {
 				return -ESRCH;
 			}
-			return request_start_monitoring(cmd, syscall, pid);
+			return request_start_monitoring(syscall, pid);
 
 		case REQUEST_STOP_MONITORING:
 			// Check if valid pid
 			if (pid != 0 || !pid_task(find_vpid(pid), PIDTYPE_PID)) {
 				return -ESRCH;
 			}
-			return request_stop_monitoring(cmd, syscall, pid);
+			return request_stop_monitoring(syscall, pid);
 
 		default:
 			return -EINVAL;
