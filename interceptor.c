@@ -422,14 +422,14 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 	switch(cmd) {
 		case REQUEST_SYSCALL_INTERCEPT:
 			// If not root, then no command for u >:c
-			if (current_id() != 0) {
+			if (current_uid() != 0) {
 				return -EPERM;
 			}
 			return request_syscall_intercept(syscall);
 
 		case REQUEST_SYSCALL_RELEASE:
 			// If not root, then no command for u >:c
-			if (current_id() != 0) {
+			if (current_uid() != 0) {
 				return -EPERM;
 			}
 			return request_syscall_release(syscall);
@@ -505,8 +505,8 @@ static int init_function(void) {
  *   then set it back to read only once done.
  * (4) Ensure synchronization, if needed.
  */
-static void exit_function(void)
-{
+static void exit_function(void) {
+	int syscall;
 
 	// Ensure all operations are finished
 	spin_lock(&calltable_lock);
@@ -519,7 +519,7 @@ static void exit_function(void)
     sys_call_table[__NR_exit_group] = orig_exit_group;
 
 	// Restore any intercepted syscalls
-	for (int syscall = 0; syscall <= NR_syscalls; syscall++) {
+	for (syscall = 0; syscall <= NR_syscalls; syscall++) {
 		if (table[syscall].intercepted == 1) {
 			sys_call_table[syscall] = table[syscall].f;
 		}
