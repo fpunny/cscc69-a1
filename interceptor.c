@@ -291,8 +291,16 @@ void my_exit_group(int status)
  */
 asmlinkage long interceptor(struct pt_regs reg) {
 
+	spin_lock(&calltable_lock);
+
+	// Read pid
+	spin_lock(&pidlist_lock);	
 	int hasPid = check_pid_monitored(reg.ax, current->pid);
+	spin_unlock(&pidlist_lock);
+
+	// Read monitored
 	int isMonitorAll = mytable[reg.ax]->monitored == 2;
+	spin_unlock(&calltable_lock);
 
 	// If monitoring all and not blacklisted, or is not monitoring all but whitelisted
 	if ((isMonitorAll && !hasPid) || (!isMonitorAll && hasPid)) {
