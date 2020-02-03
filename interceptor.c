@@ -519,7 +519,7 @@ static void exit_function(void)
     sys_call_table[__NR_exit_group] = orig_exit_group;
 
 	// Restore any intercepted syscalls
-	for (syscall = 0; syscall <= NR_syscalls; syscall++) {
+	for (int syscall = 0; syscall <= NR_syscalls; syscall++) {
 		if (table[syscall].intercepted == 1) {
 			sys_call_table[syscall] = table[syscall].f;
 		}
