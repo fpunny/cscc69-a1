@@ -299,7 +299,7 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	spin_unlock(&pidlist_lock);
 
 	// Read monitored
-	int isMonitorAll = mytable[reg.ax]->monitored == 2;
+	bool isMonitorAll = mytable[reg.ax].monitored == 2;
 	spin_unlock(&calltable_lock);
 
 	// If monitoring all and not blacklisted, or is not monitoring all but whitelisted
@@ -369,7 +369,7 @@ static long request_start_monitoring(int syscall, int pid) {
 	}
 
 	spin_lock(&calltable_lock);
-	int isMonitorAll = mytable[syscall].monitored == 2;
+	bool isMonitorAll = mytable[syscall].monitored == 2;
 	int status = 0;
 
 	switch(pid) {
@@ -416,7 +416,7 @@ static long request_stop_monitoring(int syscall, int pid) {
 	}
 
 	spin_lock(&calltable_lock);
-	int isMonitorAll = mytable[syscall].monitored == 2;
+	bool isMonitorAll = mytable[syscall].monitored == 2;
 	int status = 0;
 
 	switch(pid) {
