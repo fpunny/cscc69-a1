@@ -318,7 +318,9 @@ static long request_syscall_intercept(int cmd, int syscall) {
 	}
 
 	// Flag to intercept syscall
+	set_addr_rw((unsigned long) sys_call_table);
 	mytable[syscall]->intercepted = 1;
+	set_addr_ro((unsigned long) sys_call_table);
 	spin_unlock(&calltable_lock);
 	return 0;
 }
@@ -337,9 +339,10 @@ static long request_syscall_release(int cmd, int syscall) {
 		spin_unlock(&calltable_lock);
 		return -EINVAL;
 	}
-
+	set_addr_rw((unsigned long) sys_call_table);
 	// Flag to intercept syscall
 	mytable[syscall]->intercepted = 0;
+	set_addr_ro((unsigned long) sys_call_table);
 	spin_unlock(&calltable_lock);
 	return 0;
 }
