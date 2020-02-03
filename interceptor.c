@@ -568,6 +568,7 @@ static int init_function(void) {
 
 	// Map all the kernal syscall commands to our abstract data structure for conditional behaviour.
 	for (syscall = 0; syscall < NR_syscall; syscall++) {
+		table[syscall].listcount = 0;
 		table[syscall].intercepted = 0;
 		table[syscall].monitored = 0;
 		table[syscall].f = sys_call_table[syscall];
