@@ -303,7 +303,7 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	spin_unlock(&calltable_lock);
 
 	// If monitoring all and not blacklisted, or is not monitoring all but whitelisted
-	if ((mytable[reg.ax].monitored) == 2 && !hasPid) || (mytable[reg.ax].monitored) != 2 && hasPid)) {
+	if ((mytable[reg.ax].monitored) == 2 && hasPid == 0) || (mytable[reg.ax].monitored) != 2 && hasPid == 1)) {
 		log_message(current->pid, reg.ax, reg.bx, reg.cx, reg.dx, reg.si, reg.di, reg.bp);
 	}
 	// Returns the original custom syscall.
@@ -322,7 +322,7 @@ static long request_syscall_intercept(int syscall) {
 	spin_lock(&calltable_lock);
 
 	// Check if call is unintercepted
-	if (!mytable[syscall].intercepted) {
+	if (mytable[syscall].intercepted == 0) {
 		spin_unlock(&calltable_lock);
 		return -EBUSY;
 	}
@@ -347,7 +347,7 @@ static long request_syscall_release(int syscall) {
 	spin_lock(&calltable_lock);
 
 	// Check if call is intercepted
-	if (mytable[syscall].intercepted) {
+	if (mytable[syscall].intercepted == 1) {
 		spin_unlock(&calltable_lock);
 		return -EINVAL;
 	}
