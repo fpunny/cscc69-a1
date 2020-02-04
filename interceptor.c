@@ -320,8 +320,8 @@ static long request_syscall_intercept(int syscall) {
 
 	spin_lock(&calltable_lock);
 
-	// Check if call is unintercepted
-	if (table[syscall].intercepted == 0) {
+	// Check if call is intercepted
+	if (table[syscall].intercepted == 1) {
 		spin_unlock(&calltable_lock);
 		return -EBUSY;
 	}
@@ -345,8 +345,8 @@ static long request_syscall_release(int syscall) {
 
 	spin_lock(&calltable_lock);
 
-	// Check if call is intercepted
-	if (table[syscall].intercepted == 1) {
+	// Check if call is unintercepted
+	if (table[syscall].intercepted == 0) {
 		spin_unlock(&calltable_lock);
 		return -EINVAL;
 	}
