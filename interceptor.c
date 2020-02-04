@@ -512,14 +512,14 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		case REQUEST_START_MONITORING:
 			// Check if valid pid
 			if (pid != 0 && !pid_task(find_vpid(pid), PIDTYPE_PID)) {
-				return -ESRCH;
+				return -EINVAL;
 			}
 			return request_start_monitoring(syscall, pid);
 
 		case REQUEST_STOP_MONITORING:
 			// Check if valid pid
 			if (pid != 0 && !pid_task(find_vpid(pid), PIDTYPE_PID)) {
-				return -ESRCH;
+				return -EINVAL;
 			}
 			return request_stop_monitoring(syscall, pid);
 
