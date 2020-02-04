@@ -255,8 +255,8 @@ void (*orig_exit_group)(int);
 void my_exit_group(int status)
 {
 	// Lock Access
-    spin_lock(&calltable_lock);
-    spin_lock(&pidlist_lock);
+    // spin_lock(&calltable_lock);
+    // spin_lock(&pidlist_lock);
 
 	// Delete the pid from all list of monitored pids.
 	del_pid(current->pid);
@@ -265,8 +265,8 @@ void my_exit_group(int status)
 	orig_exit_group(status);
 
 	// Unlock Access
-    spin_unlock(&pidlist_lock);
-    spin_unlock(&calltable_lock);
+    // spin_unlock(&pidlist_lock);
+    // spin_unlock(&calltable_lock);
 }
 //----------------------------------------------------------------
 
