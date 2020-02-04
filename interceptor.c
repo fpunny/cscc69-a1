@@ -373,16 +373,16 @@ static long request_start_monitoring(int syscall, int pid) {
 	status = 0;
 
 	if (pid == 0) {
-			// If already monitoring all, no good
-			if (table[syscall].monitored == 2) {
-				status = -EBUSY;
-			} else {
-				// Reset list to blacklist and set to monitor all
-				spin_lock(&pidlist_lock);
-				destroy_list(syscall);
-				spin_unlock(&pidlist_lock);
-				table[syscall].monitored = 2;
-			}
+		// If already monitoring all, no good
+		if (table[syscall].monitored == 2) {
+			status = -EBUSY;
+		} else {
+			// Reset list to blacklist and set to monitor all
+			spin_lock(&pidlist_lock);
+			destroy_list(syscall);
+			spin_unlock(&pidlist_lock);
+			table[syscall].monitored = 2;
+		}
 	} else {
 		spin_lock(&pidlist_lock);
 
@@ -417,15 +417,15 @@ static long request_stop_monitoring(int syscall, int pid) {
 	status = 0;
 
 	if (pid == 0) {
-			// If already monitoring all, no good
-			if (table[syscall].monitored != 2) {
-				status = -EINVAL;
-			} else {
-				// Reset list to whitelist
-				spin_lock(&pidlist_lock);
-				destroy_list(syscall);
-				spin_unlock(&pidlist_lock);
-			}
+		// If already monitoring all, no good
+		if (table[syscall].monitored != 2) {
+			status = -EINVAL;
+		} else {
+			// Reset list to whitelist
+			spin_lock(&pidlist_lock);
+			destroy_list(syscall);
+			spin_unlock(&pidlist_lock);
+		}
 	} else {
 		spin_lock(&pidlist_lock);
 
@@ -511,14 +511,14 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
 		case REQUEST_START_MONITORING:
 			// Check if valid pid
-			if (pid != 0 || !pid_task(find_vpid(pid), PIDTYPE_PID)) {
+			if (pid != 0 && !pid_task(find_vpid(pid), PIDTYPE_PID)) {
 				return -ESRCH;
 			}
 			return request_start_monitoring(syscall, pid);
 
 		case REQUEST_STOP_MONITORING:
 			// Check if valid pid
-			if (pid != 0 || !pid_task(find_vpid(pid), PIDTYPE_PID)) {
+			if (pid != 0 && !pid_task(find_vpid(pid), PIDTYPE_PID)) {
 				return -ESRCH;
 			}
 			return request_stop_monitoring(syscall, pid);
