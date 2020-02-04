@@ -261,12 +261,12 @@ void my_exit_group(int status)
 	// Delete the pid from all list of monitored pids.
 	del_pid(current->pid);
 
-	// Original Exit Group Call
-	orig_exit_group(status);
-
 	// Unlock Access
     spin_unlock(&pidlist_lock);
     spin_unlock(&calltable_lock);
+
+	// Original Exit Group Call
+	orig_exit_group(status);
 }
 //----------------------------------------------------------------
 
