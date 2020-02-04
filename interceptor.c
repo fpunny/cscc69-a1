@@ -391,6 +391,10 @@ static long request_start_monitoring(int syscall, int pid) {
 			hasPid = check_pid_monitored(syscall, pid);
 			status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
 
+			if (status == 0) {
+				table[syscall].monitored = 1;
+			}
+
 		// If not, try to remove from whitelist
 		} else {
 			status = del_pid_sysc(pid, syscall);
@@ -433,6 +437,10 @@ static long request_stop_monitoring(int syscall, int pid) {
 		if (table[syscall].monitored == 2) {
 			hasPid = check_pid_monitored(syscall, pid);
 			status = hasPid ? -EBUSY : add_pid_sysc(pid, syscall);
+
+			if (status == 0) {
+				table[syscall].monitored = 1;
+			}
 
 		// If not, try to remove from blacklist
 		} else {
