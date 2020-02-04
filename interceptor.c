@@ -365,7 +365,7 @@ static long request_start_monitoring(int syscall, int pid) {
 	int status;
 
 	// Check if root user, or if monitoring own process
-	if (current_uid() != 0 && check_pid_from_list(current->pid, pid) != 0) {
+	if (current_uid() != 0 && check_pid_from_list(pid, current->pid) != 0) {
 		return -EPERM;
 	}
 
@@ -409,7 +409,7 @@ static long request_stop_monitoring(int syscall, int pid) {
 	int status;
 
 	// Check if root user, or if monitoring own process
-	if (current_uid() != 0 && check_pid_from_list(current->pid, pid) != 0) {
+	if (current_uid() != 0 && check_pid_from_list(pid, current->pid) != 0) {
 		return -EPERM;
 	}
 
