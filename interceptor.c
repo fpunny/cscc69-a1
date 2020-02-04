@@ -498,7 +498,7 @@ static long request_stop_monitoring(int syscall, int pid) {
 asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
 	// Check if syscall is valid
-	if (syscall == 0 || syscall > NR_syscalls) {
+	if (syscall <= 0 || syscall > NR_syscalls) {
 		return -EINVAL;
 	}
 
