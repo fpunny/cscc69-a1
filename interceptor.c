@@ -361,16 +361,16 @@ static long request_syscall_release(int syscall) {
 }
 
 static long request_start_monitoring(int syscall, int pid) {
+	int sameUser = check_pid_from_list(pid, current->pid) != 0;
+	int status = 0;
 	int hasPid;
-	int status;
 
 	// Check if root user, or if monitoring own process
-	if (current_uid() != 0 && check_pid_from_list(pid, current->pid) != 0) {
+	if (current_uid() != 0 && (pid == 0 || sameUser)) {
 		return -EPERM;
 	}
 
 	spin_lock(&calltable_lock);
-	status = 0;
 
 	if (pid == 0) {
 		// If already monitoring all, no good
@@ -408,17 +408,16 @@ static long request_start_monitoring(int syscall, int pid) {
 }
 
 static long request_stop_monitoring(int syscall, int pid) {
-
+	int sameUser = check_pid_from_list(pid, current->pid) != 0;
+	int status = 0;
 	int hasPid;
-	int status;
 
 	// Check if root user, or if monitoring own process
-	if (current_uid() != 0 && check_pid_from_list(pid, current->pid) != 0) {
+	if (current_uid() != 0 && (pid == 0 || sameUser)) {
 		return -EPERM;
 	}
 
 	spin_lock(&calltable_lock);
-	status = 0;
 
 	if (pid == 0) {
 		// If already monitoring all, no good
@@ -576,15 +575,13 @@ static int init_function(void) {
 	sys_call_table[__NR_exit_group] = my_exit_group;
 
 	// Map all the kernal syscall commands to our abstract data structure for conditional behaviour.
-	printk("k\n");
 	for (syscall = 0; syscall < NR_syscalls; syscall++) {
 		table[syscall].listcount = 0;
 		table[syscall].intercepted = 0;
 		table[syscall].monitored = 0;
 		table[syscall].f = sys_call_table[syscall];
-	 	INIT_LIST_HEAD (&(table[syscall].my_list));
+	 	INIT_LIST_HEAD(&(table[syscall].my_list));
 	}
-	printk("kk\n");
 
     set_addr_ro((unsigned long) sys_call_table);
 
