@@ -361,12 +361,14 @@ static long request_syscall_release(int syscall) {
 }
 
 static long request_start_monitoring(int syscall, int pid) {
-	int sameUser = check_pid_from_list(pid, current->pid) != 0;
+	int sameUser = check_pid_from_list(pid, current->pid);
 	int status = 0;
 	int hasPid;
 
+	kprint('%d', sameUser);
+
 	// Check if root user, or if monitoring own process
-	if (current_uid() != 0 && (pid == 0 || sameUser)) {
+	if (current_uid() != 0 && (pid == 0 || sameUser == -EPERM)) {
 		return -EPERM;
 	}
 
@@ -408,12 +410,12 @@ static long request_start_monitoring(int syscall, int pid) {
 }
 
 static long request_stop_monitoring(int syscall, int pid) {
-	int sameUser = check_pid_from_list(pid, current->pid) != 0;
+	int sameUser = check_pid_from_list(pid, current->pid);
 	int status = 0;
 	int hasPid;
 
 	// Check if root user, or if monitoring own process
-	if (current_uid() != 0 && (pid == 0 || sameUser)) {
+	if (current_uid() != 0 && (pid == 0 || sameUser == -EPERM)) {
 		return -EPERM;
 	}
 
